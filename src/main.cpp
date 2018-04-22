@@ -33,6 +33,21 @@ void YDirIn_ISR() {
     DirStates[Y_AXIS] = digitalReadFast(Y_DIR_IN_PIN) ? -1 : 1;
 }
 
+void pit1_isr(){
+    X_Motor.run();
+    Y_Motor.run();
+    PIT_TFLG2 = PIT_TFLG_TIF;
+}
+
+void InitPIT(){
+   // noInterrupts();
+    SIM_SCGC6 |= SIM_SCGC6_PIT;
+    PIT_MCR = 0;
+    PIT_LDVAL0 = F_BUS / (MOTOR_STEPS_PER_MM*MAX_SPEED_MMS);
+    PIT_TCTRL0 = PIT_TCTRL_TEN| PIT_TCTRL_TIE;
+  //  interrupts();
+}
+
 void Loop() {
     static bool LastEnableState = LOW;
     bool EnableState = digitalReadFast(ENABLE_PIN);
@@ -89,10 +104,10 @@ void Loop() {
     }
     LastEnableState = EnableState;
     X_Motor.moveTo(StepperSetpoint[X_AXIS]);
-    X_Motor.run();
+  //  X_Motor.run();
 
     Y_Motor.moveTo(StepperSetpoint[Y_AXIS]);
-    Y_Motor.run();
+   // Y_Motor.run();
 
 
 }
@@ -134,6 +149,7 @@ void Setup() {
     attachInterrupt(Y_DIR_IN_PIN, YDirIn_ISR, CHANGE);
     XDirIn_ISR(); //Prime Direction ISRs
     YDirIn_ISR();
+    InitPIT();
     interrupts();
     pinMode(LED_BUILTIN, OUTPUT_STRONGDRIVE);
     digitalWriteFast(LED_BUILTIN, HIGH);
